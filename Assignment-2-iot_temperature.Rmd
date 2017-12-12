@@ -1,0 +1,65 @@
+---
+title: "Assignment-2 IOT Temperature By Ganeshna S T Saikiran"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+iot_temp=read.csv(file="data_iot_temperature.csv",header = TRUE)
+Newiot_temp<-iot_temp%>%mutate(Year= format(as.Date(iot_temp$date,'%Y-%m-%d'),'%Y'),Month= format(as.Date(iot_temp$date,'%Y-%m-%d'),'%m'),Day= format(as.Date(iot_temp$date,'%Y-%m-%d'),'%d'),Hour= format(as.POSIXct(strptime(iot_temp$date,"%Y-%m-%d %H:%M")),"%H"))
+```
+
+row
+-----------------------------------------------------------------------
+
+### 1. Day wise compute the average temperature and visualize them in a line chart
+
+```{r}
+Daywise_avgtemp=Newiot_temp%>%group_by(Day)%>%summarise(Averagetemp=mean(temperature))
+
+ggplot_Daywise_avgtemp=ggplot(Daywise_avgtemp,aes(x=Day,y=Averagetemp))+geom_line(group=1)+xlab('Day') + ylab('Average Temperate PerDay')
+
+ggplotly(ggplot_Daywise_avgtemp)
+```
+
+### 2. For each day compute how many times the temperature has exceeded the lower limit and upper limit separately. Visualize the same using stack bar
+
+
+```{r}
+Daywise_temp <- Newiot_temp%>%mutate(category=cut(temperature, breaks=c(-Inf, 25, 30, Inf), labels=c("low","middle","high")))
+
+cat<-c('low','high')
+Daywise_low_high_temp <- Daywise_temp%>%filter(category%in%cat)%>%group_by(Day,category)%>%summarise(Total_low_high=n())
+
+ggplot_low_high_temp=ggplot(data = Daywise_low_high_temp, aes(x =Day , y = Total_low_high, fill = category)) + geom_bar(stat='identity') +xlab('Day') + ylab('Total No of Low and High Temp')
+
+ggplotly(ggplot_low_high_temp)
+
+```
+
+row
+-----------------------------------------------------------------------
+
+### 3. Create a new column for day of the month and hour of the day. Plot a tile map where x axis is day of the month, y axis is hour of the day. The colour should represent average temperature
+
+```{r}
+Day_Hour_Avgtemp<-Newiot_temp%>%group_by(Day,Hour)%>%summarise(Avg_temp=mean(temperature))
+
+ggplot_Day_Hour_Avgtemp=ggplot(Day_Hour_Avgtemp, aes(x=Day,y=Hour,fill = -Avg_temp))+geom_raster()+xlab('Day of the Month')+ylab('Hour of the day')
+
+ggplotly(ggplot_Day_Hour_Avgtemp)
+```
+
+### 4. Day wise visualize the distribution of temperature using one box plot per day
+
+```{r}
+ggplot_box<-ggplot(Newiot_temp,aes(x=Day,y=temperature,color='red'))+geom_boxplot()
+ggplotly(ggplot_box)
+```
+
